@@ -68,6 +68,9 @@ export default {
 
     if (url.pathname.startsWith("/api/")) {
       if (request.method === "OPTIONS") return new Response(null, { status: 204 });
+      if (!env.DASHBOARD_KEY) {
+        return json({ error: "DASHBOARD_KEY is missing in Worker secrets" }, 500);
+      }
       if (!authorized(request, env)) return json({ error: "Unauthorized" }, 401);
 
       if (url.pathname === "/api/status" && request.method === "GET") return readStatus(env);
@@ -79,4 +82,3 @@ export default {
     return env.ASSETS.fetch(request);
   }
 };
-

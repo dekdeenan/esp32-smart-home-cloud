@@ -3,9 +3,12 @@
   "name": "esp32-smart-home-cloud",
   "main": "src/worker.js",
   "compatibility_date": "2026-08-30",
+  "keep_vars": true,
+  "vars": {
+    "BLYNK_SERVER": "https://blynk.cloud"
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
   }
 }
-
