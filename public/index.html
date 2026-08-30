@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <title>ESP32 Smart Home</title>
+  <style>
+    :root{--bg:#07111f;--panel:#102139;--line:#29445f;--text:#edf7ff;--muted:#8da8bd;--green:#43df91;--red:#ff4d5d;--cyan:#42dafa}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 10% 0,#11345a,transparent 35%),var(--bg);color:var(--text);font-family:Tahoma,sans-serif}.app{width:min(94vw,920px);min-height:100dvh;margin:auto;padding:clamp(12px,2vh,22px);display:flex;flex-direction:column;justify-content:center}.title{text-align:center;margin:0;font-size:clamp(28px,4vw,43px)}.subtitle{text-align:center;margin:5px 0 13px;color:var(--muted)}.status{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.statusItem{display:flex;justify-content:center;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);padding:10px;border-radius:13px}.dot{width:12px;height:12px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red)}.dot.online{background:var(--green);box-shadow:0 0 10px var(--green)}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.card{background:linear-gradient(145deg,#132740,#0d1b2d);border:1px solid var(--line);border-radius:16px;padding:14px}.sensor{text-align:center}.sensor strong{font-size:clamp(30px,5vw,42px);color:var(--cyan)}h2{font-size:20px;margin:12px 0 9px}.relay.on{border-color:#2ec57f}.head{display:flex;justify-content:space-between}.lamp{width:23px;height:23px;border-radius:50%;background:#33495e}.relay.on .lamp{background:var(--green);box-shadow:0 0 18px var(--green)}button{font:inherit;cursor:pointer}.switch{width:100%;border:0;border-radius:10px;padding:10px;margin-top:9px;background:#2c4054;color:#fff}.relay.on .switch{background:#19a866}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.all{border:0;border-radius:11px;padding:12px;color:#fff;font-weight:bold}.onBtn{background:#159c62}.offBtn{background:#d44b5c}.credit{text-align:center;color:var(--muted);font-size:14px;margin:11px 0 0}.login{position:fixed;inset:0;background:#07111fee;display:grid;place-items:center;padding:20px;z-index:5}.login.hidden{display:none}.loginBox{width:min(92vw,420px);background:#102139;border:1px solid var(--line);border-radius:20px;padding:24px;text-align:center}.loginBox input{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);background:#071521;color:#fff;margin:12px 0}.loginBox button{width:100%;padding:12px;border:0;border-radius:10px;background:#1979b8;color:#fff;font-weight:bold}.error{color:#ff91a0;min-height:22px}@media(max-width:540px){.app{width:96vw;justify-content:flex-start}.grid,.status{gap:8px}.card{padding:10px}}@media(max-height:720px){.app{justify-content:flex-start;padding-top:8px}.title{font-size:28px}.subtitle{margin:2px 0 7px}.statusItem{padding:6px}.card{padding:8px}.sensor strong{font-size:29px}h2{margin:7px 0}.switch,.all{padding:7px}.credit{margin-top:6px}}
+    /* ขนาดแถบตามแบบ: ยาว 15 ซม. จำนวน 2 คอลัมน์ และย่ออัตโนมัติเมื่อจอเตี้ย */
+    @media (min-width:541px){
+      .app{width:min(96vw,calc(30cm + 50px));min-height:100dvh;padding:12px 20px 8px;justify-content:flex-start}
+      .title{margin-top:auto}
+      .grid,.actions{grid-template-columns:repeat(2,minmax(0,15cm));justify-content:center}
+      .sensor{height:min(4.5cm,20vh);text-align:left;display:flex;flex-direction:column;justify-content:center}
+      #relays .relay{height:min(5cm,20vh);display:flex;flex-direction:column;justify-content:space-between}
+      .actions .all{width:15cm;max-width:100%;height:min(2cm,9vh)}
+      .credit{margin-top:auto;margin-bottom:0;padding-top:6px}
+    }
+  </style>
+</head>
+<body>
+  <div class="login" id="login"><div class="loginBox"><h2>เข้าสู่ Dashboard</h2><p>ใส่รหัส Dashboard ที่ตั้งไว้ใน Cloudflare Secret</p><input id="accessKey" type="password" placeholder="Dashboard Access Key"><button id="loginBtn">เชื่อมต่อ</button><p class="error" id="loginError"></p></div></div>
+  <main class="app">
+    <h1 class="title">ESP32 Smart Home</h1><p class="subtitle">Blynk Cloud + Hosted Web Control</p>
+    <div class="status"><div class="statusItem"><i class="dot" id="cloudDot"></i><span id="cloudStatus">Cloud: OFFLINE</span></div><div class="statusItem"><i class="dot" id="blynkDot"></i><span id="blynkStatus">Blynk: OFFLINE</span></div></div>
+    <section class="grid"><div class="card sensor">อุณหภูมิ<br><strong id="t">--</strong> °C</div><div class="card sensor">ความชื้น<br><strong id="h">--</strong> %</div></section>
+    <h2>ควบคุมรีเลย์</h2><section class="grid" id="relays"></section>
+    <div class="actions"><button class="all onBtn" onclick="allRelay(true)">เปิดทั้งหมด</button><button class="all offBtn" onclick="allRelay(false)">ปิดทั้งหมด</button></div>
+    <p class="credit">ออกแบบโดย @ นายกฤษณะพงศ์&nbsp;&nbsp;ศรีสุคนธ์</p>
+  </main>
+  <script>
+    let state=[0,0,0,0],key=sessionStorage.getItem('dashboardKey')||'';const box=document.querySelector('#relays');
+    const headers=()=>({'Content-Type':'application/json','X-Dashboard-Key':key});
+    function dot(id,on){document.querySelector(id).classList.toggle('online',on)}
+    function draw(){box.innerHTML='';state.forEach((v,i)=>{const e=document.createElement('div');e.className='card relay '+(v?'on':'');e.innerHTML='<div class="head"><b>รีเลย์ '+(i+1)+'</b><i class="lamp"></i></div><button class="switch">'+(v?'ปิด':'เปิด')+'</button>';e.querySelector('button').onclick=()=>relay(i+1,!v);box.appendChild(e)})}
+    async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:headers(),body:body?JSON.stringify(body):undefined});const d=await r.json().catch(()=>({}));if(r.status===401)throw Error('รหัส Dashboard ไม่ถูกต้อง');if(!r.ok){if(d.error?.includes('DASHBOARD_KEY'))throw Error('ยังไม่ได้ตั้ง DASHBOARD_KEY ใน Worker Secret');if(d.error?.includes('BLYNK_TOKEN'))throw Error('ยังไม่ได้ตั้ง BLYNK_TOKEN ใน Worker Secret');throw Error(d.error||'ระบบ Cloud ไม่ตอบสนอง')}return d}
+    async function relay(id,on){try{await api('/api/relay',{id,state:on?1:0});await load()}catch(e){alert(e.message)}}
+    async function allRelay(on){try{await api('/api/all',{state:on?1:0});await load()}catch(e){alert(e.message)}}
+    async function load(showError=false){try{const d=await api('/api/status');state=d.relays;document.querySelector('#t').textContent=d.temperature??'--';document.querySelector('#h').textContent=d.humidity??'--';document.querySelector('#cloudStatus').textContent='Cloud: ONLINE';document.querySelector('#blynkStatus').textContent='Blynk: ONLINE';dot('#cloudDot',true);dot('#blynkDot',true);draw();return true}catch(e){document.querySelector('#cloudStatus').textContent='Cloud: OFFLINE';document.querySelector('#blynkStatus').textContent='Blynk: OFFLINE';dot('#cloudDot',false);dot('#blynkDot',false);if(showError)document.querySelector('#loginError').textContent=e.message;return false}}
+    async function login(){key=document.querySelector('#accessKey').value.trim();if(!key)return;document.querySelector('#loginError').textContent='กำลังตรวจสอบ...';sessionStorage.setItem('dashboardKey',key);if(await load(true)){document.querySelector('#login').classList.add('hidden');document.querySelector('#loginError').textContent=''}}
+    document.querySelector('#loginBtn').onclick=login;document.querySelector('#accessKey').onkeydown=e=>{if(e.key==='Enter')login()};draw();if(key){document.querySelector('#accessKey').value=key;login()}setInterval(()=>{if(document.querySelector('#login').classList.contains('hidden'))load()},10000);
+  </script>
+</body></html>
