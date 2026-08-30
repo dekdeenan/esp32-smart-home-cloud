@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <div class="login" id="login"><div class="loginBox"><h2>Dashboard</h2><p>ระบบ IoT Smart Home</p><input id="accessKey" type="password" placeholder="Dashboard Access Key"><button id="loginBtn">เชื่อมต่อ</button><p class="error" id="loginError"></p></div></div>
+  <div class="login" id="login"><div class="loginBox"><h2>Dashboard</h2><p>ระบบ IoT Smart Home</p><input id="accessKey" type="password" placeholder="รหัสผ่านเข้าใช้งาน"><button id="loginBtn">เชื่อมต่อ</button><p class="error" id="loginError"></p></div></div>
   <main class="app">
     <h1 class="title">ESP32 Smart Home</h1><p class="subtitle">Blynk Cloud + Hosted Web Control</p>
     <div class="status"><div class="statusItem"><i class="dot" id="cloudDot"></i><span id="cloudStatus">Cloud: OFFLINE</span></div><div class="statusItem"><i class="dot" id="blynkDot"></i><span id="blynkStatus">Blynk: OFFLINE</span></div></div>
@@ -34,7 +34,7 @@
     const headers=()=>({'Content-Type':'application/json','X-Dashboard-Key':key});
     function dot(id,on){document.querySelector(id).classList.toggle('online',on)}
     function draw(){box.innerHTML='';state.forEach((v,i)=>{const e=document.createElement('div');e.className='card relay '+(v?'on':'');e.innerHTML='<div class="head"><b>รีเลย์ '+(i+1)+'</b><i class="lamp"></i></div><button class="switch">'+(v?'ปิด':'เปิด')+'</button>';e.querySelector('button').onclick=()=>relay(i+1,!v);box.appendChild(e)})}
-    async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:headers(),body:body?JSON.stringify(body):undefined});const d=await r.json().catch(()=>({}));if(r.status===401)throw Error('รหัส Dashboard ไม่ถูกต้อง');if(!r.ok){if(d.error?.includes('DASHBOARD_KEY'))throw Error('ยังไม่ได้ตั้ง DASHBOARD_KEY ใน Worker Secret');if(d.error?.includes('BLYNK_TOKEN'))throw Error('ยังไม่ได้ตั้ง BLYNK_TOKEN ใน Worker Secret');throw Error(d.error||'ระบบ Cloud ไม่ตอบสนอง')}return d}
+    async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:headers(),body:body?JSON.stringify(body):undefined});const d=await r.json().catch(()=>({}));if(r.status===401)throw Error('รหัสผ่านไม่ถูกต้อง');if(!r.ok){if(d.error?.includes('DASHBOARD_KEY'))throw Error('ยังไม่ได้ตั้ง DASHBOARD_KEY ใน Worker Secret');if(d.error?.includes('BLYNK_TOKEN'))throw Error('ยังไม่ได้ตั้ง BLYNK_TOKEN ใน Worker Secret');throw Error(d.error||'ระบบ Cloud ไม่ตอบสนอง')}return d}
     async function relay(id,on){try{await api('/api/relay',{id,state:on?1:0});await load()}catch(e){alert(e.message)}}
     async function allRelay(on){try{await api('/api/all',{state:on?1:0});await load()}catch(e){alert(e.message)}}
     async function load(showError=false){try{const d=await api('/api/status');state=d.relays;document.querySelector('#t').textContent=d.temperature??'--';document.querySelector('#h').textContent=d.humidity??'--';document.querySelector('#cloudStatus').textContent='Cloud: ONLINE';document.querySelector('#blynkStatus').textContent='Blynk: ONLINE';dot('#cloudDot',true);dot('#blynkDot',true);draw();return true}catch(e){document.querySelector('#cloudStatus').textContent='Cloud: OFFLINE';document.querySelector('#blynkStatus').textContent='Blynk: OFFLINE';dot('#cloudDot',false);dot('#blynkDot',false);if(showError)document.querySelector('#loginError').textContent=e.message;return false}}
