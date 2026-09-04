@@ -21,24 +21,63 @@ function authorized(request, env) {
 async function readStatus(env) {
   if (!env.BLYNK_TOKEN) return json({ error: "BLYNK_TOKEN is missing" }, 500);
   const server = env.BLYNK_SERVER || "https://blynk.cloud";
-  const pins = ["V1", "V2", "V3", "V4", "V6", "V7"];
+  const pins = ["V1", "V2", "V3", "V4", "V6", "V7", "V9", "V10", "V11", "V12"];
 
   try {
-    const values = await Promise.all(pins.map(async pin => {
+    const values = await Promise.all(pins.map(async (pin, index) => {
       const url = `${server}/external/api/get?token=${encodeURIComponent(env.BLYNK_TOKEN)}&${pin}`;
       const response = await fetch(url, { headers: { "Accept": "text/plain" } });
       if (!response.ok) throw new Error(`Blynk ${pin}: ${response.status}`);
-      return numberValue(await response.text());
+      const text = (await response.text()).replaceAll('"', '').trim();
+      return index < 6 ? numberValue(text) : text;
     }));
 
+    const schedules = values.slice(6).map(value => {
+      const parts = String(value ?? "").split(",").map(Number);
+      return parts.length === 2 && parts.every(Number.isFinite)
+        ? { start: parts[0], stop: parts[1] }
+        : null;
+    });
     return json({
       relays: values.slice(0, 4).map(value => value === 1 ? 1 : 0),
       temperature: values[4],
-      humidity: values[5]
+      humidity: values[5],
+      now: Math.floor(Date.now() / 1000),
+      schedules
     });
   } catch (error) {
     return json({ error: "Blynk is unavailable" }, 502);
   }
+}
+
+async function updateSchedule(request, env) {
+  if (!env.BLYNK_TOKEN) return json({ error: "BLYNK_TOKEN is missing" }, 500);
+  const body = await request.json().catch(() => ({}));
+  const id = Number(body.id);
+  const start = Math.floor(Number(body.start));
+  const stop = Math.floor(Number(body.stop));
+  const now = Math.floor(Date.now() / 1000);
+  if (!Number.isInteger(id) || id < 1 || id > 4 ||
+      !Number.isFinite(start) || !Number.isFinite(stop) || start <= now || stop <= start) {
+    return json({ error: "Invalid or expired schedule" }, 400);
+  }
+
+  const server = env.BLYNK_SERVER || "https://blynk.cloud";
+  const pin = `V${id + 8}`;
+  const value = encodeURIComponent(`${start},${stop}`);
+  const response = await fetch(`${server}/external/api/update?token=${encodeURIComponent(env.BLYNK_TOKEN)}&${pin}=${value}`);
+  return response.ok ? json({ ok: true }) : json({ error: "Blynk update failed" }, 502);
+}
+
+async function cancelSchedule(request, env) {
+  if (!env.BLYNK_TOKEN) return json({ error: "BLYNK_TOKEN is missing" }, 500);
+  const body = await request.json().catch(() => ({}));
+  const id = Number(body.id);
+  if (!Number.isInteger(id) || id < 1 || id > 4) return json({ error: "Relay id must be 1-4" }, 400);
+  const server = env.BLYNK_SERVER || "https://blynk.cloud";
+  const pin = `V${id + 8}`;
+  const response = await fetch(`${server}/external/api/update?token=${encodeURIComponent(env.BLYNK_TOKEN)}&${pin}=`);
+  return response.ok ? json({ ok: true }) : json({ error: "Blynk update failed" }, 502);
 }
 
 async function updateRelay(request, env) {
@@ -76,6 +115,8 @@ export default {
       if (url.pathname === "/api/status" && request.method === "GET") return readStatus(env);
       if (url.pathname === "/api/relay" && request.method === "POST") return updateRelay(request, env);
       if (url.pathname === "/api/all" && request.method === "POST") return updateAll(request, env);
+      if (url.pathname === "/api/schedule" && request.method === "POST") return updateSchedule(request, env);
+      if (url.pathname === "/api/schedule/cancel" && request.method === "POST") return cancelSchedule(request, env);
       return json({ error: "Not found" }, 404);
     }
 
