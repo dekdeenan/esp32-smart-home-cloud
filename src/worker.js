@@ -21,7 +21,7 @@ function authorized(request, env) {
 async function readStatus(env) {
   if (!env.BLYNK_TOKEN) return json({ error: "BLYNK_TOKEN is missing" }, 500);
   const server = env.BLYNK_SERVER || "https://blynk.cloud";
-  const pins = ["V1", "V2", "V3", "V4", "V6", "V7", "V9", "V10", "V11", "V12"];
+  const pins = ["V1", "V2", "V3", "V4", "V6", "V7", "V9"];
 
   try {
     const values = await Promise.all(pins.map(async (pin, index) => {
@@ -32,8 +32,9 @@ async function readStatus(env) {
       return index < 6 ? numberValue(text) : text;
     }));
 
-    const schedules = values.slice(6).map(value => {
-      const parts = String(value ?? "").split(",").map(Number);
+    const slots = String(values[6] || "").split(";");
+    const schedules = Array.from({ length: 4 }, (_, index) => {
+      const parts = String(slots[index] || "-").split(",").map(Number);
       return parts.length === 2 && parts.every(Number.isFinite)
         ? { start: parts[0], stop: parts[1] }
         : null;
@@ -63,9 +64,14 @@ async function updateSchedule(request, env) {
   }
 
   const server = env.BLYNK_SERVER || "https://blynk.cloud";
-  const pin = `V${id + 8}`;
-  const value = encodeURIComponent(`${start},${stop}`);
-  const response = await fetch(`${server}/external/api/update?token=${encodeURIComponent(env.BLYNK_TOKEN)}&${pin}=${value}`);
+  const getResponse = await fetch(`${server}/external/api/get?token=${encodeURIComponent(env.BLYNK_TOKEN)}&V9`);
+  if (!getResponse.ok) return json({ error: "Blynk schedule read failed" }, 502);
+  const current = (await getResponse.text()).replaceAll('"', '').trim();
+  const slots = current ? current.split(";") : [];
+  while (slots.length < 4) slots.push("-");
+  slots[id - 1] = `${start},${stop}`;
+  const value = encodeURIComponent(slots.slice(0, 4).join(";"));
+  const response = await fetch(`${server}/external/api/update?token=${encodeURIComponent(env.BLYNK_TOKEN)}&V9=${value}`);
   return response.ok ? json({ ok: true }) : json({ error: "Blynk update failed" }, 502);
 }
 
@@ -75,8 +81,14 @@ async function cancelSchedule(request, env) {
   const id = Number(body.id);
   if (!Number.isInteger(id) || id < 1 || id > 4) return json({ error: "Relay id must be 1-4" }, 400);
   const server = env.BLYNK_SERVER || "https://blynk.cloud";
-  const pin = `V${id + 8}`;
-  const response = await fetch(`${server}/external/api/update?token=${encodeURIComponent(env.BLYNK_TOKEN)}&${pin}=`);
+  const getResponse = await fetch(`${server}/external/api/get?token=${encodeURIComponent(env.BLYNK_TOKEN)}&V9`);
+  if (!getResponse.ok) return json({ error: "Blynk schedule read failed" }, 502);
+  const current = (await getResponse.text()).replaceAll('"', '').trim();
+  const slots = current ? current.split(";") : [];
+  while (slots.length < 4) slots.push("-");
+  slots[id - 1] = "-";
+  const value = encodeURIComponent(slots.slice(0, 4).join(";"));
+  const response = await fetch(`${server}/external/api/update?token=${encodeURIComponent(env.BLYNK_TOKEN)}&V9=${value}`);
   return response.ok ? json({ ok: true }) : json({ error: "Blynk update failed" }, 502);
 }
 
