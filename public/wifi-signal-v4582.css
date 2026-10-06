@@ -1,0 +1,7 @@
+.wifiSignalRow{display:flex!important;align-items:center;gap:7px;margin-top:5px;color:#8fa8c2!important;font-size:11px!important;line-height:1.2}
+.wifiSignalBars{display:flex;align-items:center;gap:3px;height:14px;flex:none}
+.wifiSignalBars i{display:block!important;width:3px!important;height:14px!important;border-radius:3px!important;background:#718096!important;box-shadow:none!important}
+.wifiSignalRow.level1,.wifiSignalRow.level2,.wifiSignalRow.level3,.wifiSignalRow.level4{color:#29dc79!important}
+.wifiSignalRow.level1 .wifiSignalBars i:nth-child(1),.wifiSignalRow.level2 .wifiSignalBars i:nth-child(-n+2),.wifiSignalRow.level3 .wifiSignalBars i:nth-child(-n+3),.wifiSignalRow.level4 .wifiSignalBars i{background:#29dc79!important;box-shadow:0 0 4px #29dc7940!important}
+.wifiSignalRow.level0{color:#8fa8c2!important}
+@media(max-width:560px){.wifiSignalRow{gap:5px;font-size:9px!important;margin-top:4px}.wifiSignalBars{height:12px;gap:3px}.wifiSignalBars i{width:3px!important;height:12px!important}}
